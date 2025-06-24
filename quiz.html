@@ -97,6 +97,7 @@
 
     <script>
         // --- BANCO DE DADOS DAS PERGUNTAS ---
+        // Adicione ou edite suas perguntas aqui
         const quizData = [
             { id: 1, question: { type: 'text', content: 'Qual destes frameworks CSS foi usado para criar este quiz?' }, options: [ { type: 'text', content: 'Bootstrap' }, { type: 'text', content: 'Foundation' }, { type: 'text', content: 'Tailwind CSS' }, { type: 'text', content: 'Bulma' } ], correctAnswer: 2 },
             { id: 2, question: { type: 'gif', content: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFmYnEwdHZjaTVqejBpc2Y4Zjg5bGs0eTNkaG83dXd6eDc0bXg2eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26n6Ty3kYn22QRqGQ/giphy.gif' }, options: [ { type: 'text', content: 'O Gato de Botas' }, { type: 'text', content: 'Garfield' }, { type: 'text', content: 'Gato Risonho' } ], correctAnswer: 2 },
@@ -107,12 +108,11 @@
         // --- LÓGICA DO QUIZ ---
         
         // --- CONFIGURAÇÃO DE ARQUIVOS DE SOM ---
-        // Coloque os caminhos para seus arquivos de áudio (.mp3, .wav, etc.)
-        // Os arquivos devem estar na pasta 'sounds'.
+        // O código usará estes caminhos para encontrar seus arquivos de som.
         const soundFiles = {
             click: 'sounds/click.mp3',
             correct: 'sounds/correct.mp3',
-            incorrect: 'sounds/incorrect.mp3'
+            incorrect: 'sounds/wrong.mp3'
         };
 
         // Elementos da UI
@@ -256,40 +256,3 @@
     </script>
 </body>
 </html>
-```
-
-### Como Usar a Nova Versão
-
-1.  **Crie a Pasta de Sons:**
-    No seu computador, crie uma pasta chamada `sounds` no mesmo local onde está o seu arquivo `quiz.html`.
-
-2.  **Adicione seus Arquivos de Áudio:**
-    Coloque seus arquivos de som (`.mp3`, `.wav`, etc.) dentro desta pasta `sounds`. Renomeie os arquivos para `click.mp3`, `correct.mp3`, e `incorrect.mp3` para corresponder à configuração padrão.
-
-    Sua estrutura de pastas deve ficar assim:
-
-    ```
-    meu-quiz/
-    ├── quiz.html
-    ├── gifs/
-    │   └── seu-gif.gif
-    └── sounds/          <-- Nova pasta
-        ├── click.mp3
-        ├── correct.mp3
-        └── incorrect.mp3
-    ```
-
-3.  **Personalize os Caminhos (Opcional):**
-    Se você usar nomes de arquivo diferentes, basta atualizar a seção `soundFiles` no código:
-    ```javascript
-    const soundFiles = {
-        click: 'sounds/click.mp3',
-        correct: 'sounds/correct.mp3',
-        incorrect: 'sounds/wrong.mp3'
-    };
-    ```
-
-4.  **Envie Tudo para o GitHub:**
-    Quando for hospedar, faça o upload da estrutura inteira para o seu repositório do GitHub: o `quiz.html` e as pastas `gifs` e `sounds` com seus respectivos arquivos.
-
-Agora, seu quiz usará os seus próprios arquivos de som, dando um toque ainda mais único e profissional ao seu proje
