@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Interativo</title>
+    
+    <!-- Tailwind CSS para um design rápido e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter (usado no iOS) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tone.js para efeitos sonoros -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <style>
+        /* Estilos personalizados para complementar o Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .quiz-card {
+            background-color: #ffffff;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .option-button {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .option-button.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-2px);
+        }
+        .option-button.correct {
+            border-color: #10b981;
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .option-button.incorrect {
+            border-color: #ef4444;
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .youtube-embed {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+        .youtube-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Estilo para o estado de carregamento */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="quiz-container" class="quiz-card w-full max-w-2xl p-6 sm:p-8 space-y-6 fade-in loading">
+        <div id="loading-message" class="text-center text-gray-500">Carregando...</div>
+        <div id="question-area" class="space-y-4 hidden"></div>
+        <div id="options-area" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden"></div>
+        <div id="action-area" class="pt-4 hidden">
+            <button id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-all focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                Enviar
+            </button>
+            <button id="retry-btn" class="w-full bg-gray-700 text-white font-bold py-3 px-4 rounded-xl hover:bg-gray-800 transition-all focus:outline-none focus:ring-4 focus:ring-gray-300 hidden">
+                Tentar Novamente
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS DAS PERGUNTAS ---
+        const quizData = [
+            { id: 1, question: { type: 'text', content: 'Qual destes frameworks CSS foi usado para criar este quiz?' }, options: [ { type: 'text', content: 'Bootstrap' }, { type: 'text', content: 'Foundation' }, { type: 'text', content: 'Tailwind CSS' }, { type: 'text', content: 'Bulma' } ], correctAnswer: 2 },
+            { id: 2, question: { type: 'gif', content: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFmYnEwdHZjaTVqejBpc2Y4Zjg5bGs0eTNkaG83dXd6eDc0bXg2eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26n6Ty3kYn22QRqGQ/giphy.gif' }, options: [ { type: 'text', content: 'O Gato de Botas' }, { type: 'text', content: 'Garfield' }, { type: 'text', content: 'Gato Risonho' } ], correctAnswer: 2 },
+            { id: 3, question: { type: 'youtube', content: 'U9mJuUkhUzk' }, options: [ { type: 'text', content: 'Um trailer de filme' }, { type: 'text', content: 'Um videoclipe' }, { type: 'text', content: 'Relaxing Music' }, { type: 'text', content: 'Um tutorial de programação' } ], correctAnswer: 2 },
+            { id: 4, question: { type: 'text', content: 'Qual animal é este?' }, options: [ { type: 'gif', content: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYTVpNGl5eHY5cm9nN2F5d3hzM3JzNHE2bzhreTdjaXBqN2xwc3U1ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/s6dWu2TcrN2wE/giphy.gif' }, { type: 'gif', content: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2Jqbm1wZ2JicjYzdXJncDFld3hybWZ4OGgwaHBiaGgzMnp2ZG14bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5gXYAmztvr2Z3gB02w/giphy.gif' }, ], correctAnswer: 0 }
+        ];
+
+        // --- LÓGICA DO QUIZ ---
+        
+        // --- CONFIGURAÇÃO DE ARQUIVOS DE SOM ---
+        // Coloque os caminhos para seus arquivos de áudio (.mp3, .wav, etc.)
+        // Os arquivos devem estar na pasta 'sounds'.
+        const soundFiles = {
+            click: 'sounds/click.mp3',
+            correct: 'sounds/correct.mp3',
+            incorrect: 'sounds/incorrect.mp3'
+        };
+
+        // Elementos da UI
+        const quizContainer = document.getElementById('quiz-container');
+        const loadingMessage = document.getElementById('loading-message');
+        const questionArea = document.getElementById('question-area');
+        const optionsArea = document.getElementById('options-area');
+        const actionArea = document.getElementById('action-area');
+        const submitBtn = document.getElementById('submit-btn');
+        const retryBtn = document.getElementById('retry-btn');
+
+        // Players para os arquivos de som, carregados ao iniciar
+        const soundPlayers = new Tone.Players({
+            urls: soundFiles,
+            onload: () => {
+                // Função chamada quando todos os sons estiverem carregados
+                console.log('Sons carregados com sucesso!');
+                // Habilita a interface do quiz
+                quizContainer.classList.remove('loading');
+                loadingMessage.style.display = 'none';
+                questionArea.style.display = 'block';
+                optionsArea.style.display = 'grid';
+                actionArea.style.display = 'block';
+            },
+            onerror: (error) => {
+                console.error("Erro ao carregar os sons:", error);
+                loadingMessage.textContent = "Erro ao carregar sons. Verifique os caminhos dos arquivos.";
+                loadingMessage.classList.add('text-red-500');
+            }
+        }).toDestination();
+        
+        let currentQuestion = {};
+        let selectedOption = null;
+        let answered = false;
+
+        function getQuestionIdFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return parseInt(params.get('id')) || 1;
+        }
+        
+        function loadQuestion(id) {
+            const questionData = quizData.find(q => q.id === id);
+            if (!questionData) {
+                questionArea.innerHTML = `<h2 class="text-xl font-semibold text-center text-red-600">Pergunta não encontrada!</h2><p class="text-center text-gray-500">Verifique o ID na URL.</p>`;
+                optionsArea.innerHTML = '';
+                actionArea.style.display = 'none';
+                return;
+            }
+            currentQuestion = questionData;
+            renderQuestion();
+            resetState();
+        }
+
+        function renderQuestion() {
+            const { type, content } = currentQuestion.question;
+            let questionHTML = '';
+            switch (type) {
+                case 'text': questionHTML = `<h2 class="text-2xl font-bold text-gray-800 text-center">${content}</h2>`; break;
+                case 'gif': questionHTML = `<img src="${content}" alt="Pergunta em GIF" class="w-full max-h-80 object-contain mx-auto rounded-lg">`; break;
+                case 'youtube': questionHTML = `<div class="youtube-embed"><iframe src="https://www.youtube.com/embed/${content}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`; break;
+            }
+            questionArea.innerHTML = questionHTML;
+            renderOptions();
+        }
+
+        function renderOptions() {
+            optionsArea.innerHTML = '';
+            currentQuestion.options.forEach((option, index) => {
+                const { type, content } = option;
+                let optionHTML = '';
+                switch (type) {
+                    case 'text': optionHTML = content; break;
+                    case 'gif': optionHTML = `<img src="${content}" alt="Opção ${index + 1}" class="w-full h-40 object-contain mx-auto">`; break;
+                }
+                const button = document.createElement('button');
+                button.innerHTML = optionHTML;
+                button.dataset.index = index;
+                button.className = 'option-button p-4 font-semibold text-gray-700 rounded-xl text-center';
+                button.addEventListener('click', () => handleOptionSelect(button, index));
+                optionsArea.appendChild(button);
+            });
+        }
+
+        function handleOptionSelect(button, index) {
+            if (answered) return;
+            // Toca o som de clique usando o nome da chave ('click')
+            soundPlayers.player('click').start();
+            const currentlySelected = document.querySelector('.option-button.selected');
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+            button.classList.add('selected');
+            selectedOption = index;
+            submitBtn.disabled = false;
+        }
+        
+        function checkAnswer() {
+            if (selectedOption === null) return;
+            answered = true;
+            submitBtn.style.display = 'none';
+            retryBtn.style.display = 'block';
+            const selectedButton = document.querySelector(`.option-button[data-index='${selectedOption}']`);
+            const correctButton = document.querySelector(`.option-button[data-index='${currentQuestion.correctAnswer}']`);
+
+            if (selectedOption === currentQuestion.correctAnswer) {
+                selectedButton.classList.add('correct');
+                soundPlayers.player('correct').start();
+            } else {
+                selectedButton.classList.add('incorrect');
+                if (correctButton) {
+                    correctButton.classList.add('correct');
+                }
+                soundPlayers.player('incorrect').start();
+            }
+            document.querySelectorAll('.option-button').forEach(btn => btn.disabled = true);
+        }
+
+        function resetState() {
+            selectedOption = null;
+            answered = false;
+            submitBtn.style.display = 'block';
+            retryBtn.style.display = 'none';
+            submitBtn.disabled = true;
+            document.querySelectorAll('.option-button').forEach(btn => {
+                btn.classList.remove('selected', 'correct', 'incorrect');
+                btn.disabled = false;
+            });
+        }
+
+        submitBtn.addEventListener('click', checkAnswer);
+        retryBtn.addEventListener('click', () => {
+            resetState();
+            renderQuestion();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const questionId = getQuestionIdFromURL();
+            loadQuestion(questionId);
+        });
+
+    </script>
+</body>
+</html>
+```
+
+### Como Usar a Nova Versão
+
+1.  **Crie a Pasta de Sons:**
+    No seu computador, crie uma pasta chamada `sounds` no mesmo local onde está o seu arquivo `quiz.html`.
+
+2.  **Adicione seus Arquivos de Áudio:**
+    Coloque seus arquivos de som (`.mp3`, `.wav`, etc.) dentro desta pasta `sounds`. Renomeie os arquivos para `click.mp3`, `correct.mp3`, e `incorrect.mp3` para corresponder à configuração padrão.
+
+    Sua estrutura de pastas deve ficar assim:
+
+    ```
+    meu-quiz/
+    ├── quiz.html
+    ├── gifs/
+    │   └── seu-gif.gif
+    └── sounds/          <-- Nova pasta
+        ├── click.mp3
+        ├── correct.mp3
+        └── incorrect.mp3
+    ```
+
+3.  **Personalize os Caminhos (Opcional):**
+    Se você usar nomes de arquivo diferentes, basta atualizar a seção `soundFiles` no código:
+    ```javascript
+    const soundFiles = {
+        click: 'sounds/meu-clique.wav',
+        correct: 'sounds/acerto.mp3',
+        incorrect: 'sounds/erro.ogg'
+    };
+    ```
+
+4.  **Envie Tudo para o GitHub:**
+    Quando for hospedar, faça o upload da estrutura inteira para o seu repositório do GitHub: o `quiz.html` e as pastas `gifs` e `sounds` com seus respectivos arquivos.
+
+Agora, seu quiz usará os seus próprios arquivos de som, dando um toque ainda mais único e profissional ao seu proje
